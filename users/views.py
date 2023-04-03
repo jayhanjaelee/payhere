@@ -1,58 +1,100 @@
-import bcrypt
+import io
+import os
+import math
+from datetime import datetime, timezone
 
-from .models import User
-from .serializers import UserSerializer
+import jwt
+import bcrypt
+from dotenv import load_dotenv
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
-
-import json
+from rest_framework.parsers import JSONParser
 
 
-@api_view(["GET"])
-def index(request):
-    api_urls = {
-        "signup": "/users/signup",
-        "signin": "/users/signin",
-    }
+from .models import User
+from .serializers import UserSignUpSerializer
 
-    return Response(api_urls)
+load_dotenv()
 
 
 class UsersAPI(APIView):
     def get(self, request):
-        print("signin")
-        queryset = User.objects.all()
-        print("get queryset: ", queryset)
-        serializer = UserSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        request_body = json.loads(request.body.decode("utf-8"))
-        email = request_body.get("email")
-        password = request_body.get("password")
+        email = request.data.get("email")
+        password = request.data.get("password")
 
         if not email or not password:
             return Response(
-                {"error": "INVALIED_USER_INPUT."},
+                {"error": "USER INPUT IS INVALID."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        encoded_password = encode_password(password)
+        user = User.objects.get(email=email)
+        password_match = check_password(
+            password=password, hashed_password=user.password
+        )
 
-        user = User(email=email, password=encoded_password)
-        user.save()
+        if not password_match:
+            return Response({"error": "INVALID_PASSWORD"})
 
+        secret_key = os.getenv("JWT_SECRET_KEY")
+        payload = {
+            "id": user.id,
+            "iat": get_creent_time_in_utc(),
+            "exp": get_expired_time_in_utc(),
+        }
+
+        token = jwt.encode(payload, secret_key, algorithm="HS256")
+        return Response({"token": token})
+
+    def post(self, request):
+        stream = io.BytesIO(request.body)
+        data = JSONParser().parse(stream)
+
+        password = data.get("password")
+        if not password:
+            return Response(
+                {"error": "INVALID_PASSWORD"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data["password"] = generate_hashed_password(password)
+        serializer = UserSignUpSerializer(data=data)
+
+        if not serializer.is_valid():
+            errors = serializer.errors
+            return Response(
+                {"error": errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer.save()
+        email = serializer.validated_data["email"]
         return Response(
-            {"message": f"{email} IS CREATED."}, status=status.HTTP_201_CREATED
+            {"message": f"{email} IS CREATED."},
+            status=status.HTTP_201_CREATED,
         )
 
     def get_view_name(self):
         return "Users API"
 
 
-def encode_password(password):
+def check_password(password, hashed_password):
+    return bcrypt.checkpw(
+        password.encode("utf-8"), hashed_password.encode("utf-8")
+    )
+
+
+def generate_hashed_password(password):
     salt = bcrypt.gensalt(12)
     encoded_password = bcrypt.hashpw(password.encode("utf-8"), salt)
-    return encoded_password
+    return encoded_password.decode("utf-8")
+
+
+def get_creent_time_in_utc():
+    utc_time = (datetime.now(timezone.utc).timestamp() + (60 * 60 * 9)) * 1000
+    return math.floor(utc_time)
+
+
+def get_expired_time_in_utc():
+    diff = 60 * 60 * 24 * 1000
+    return get_creent_time_in_utc() + diff
