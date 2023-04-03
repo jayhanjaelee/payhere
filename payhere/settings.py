@@ -33,8 +33,7 @@ SECRET_KEY = (
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 ALLOWED_HOSTS = ["hanjaelee.com", "www.hanjaelee.com"]
-CORS_ORIGIN_WHITELIST = ["http://hanjaelee.com", "http://www.hanjaelee.com"]
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
 
