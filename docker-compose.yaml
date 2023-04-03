@@ -7,10 +7,23 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MYSQL_USER: "root"
-      MYSQL_ROOT_PASSWORD: "1234"
-      MYSQL_DATABASE: "payhere"
-    container_name: "mysql"
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    container_name: "payhere-mysql"
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    container_name: "payhere-web"
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: payhere-mysql
+      DB_PORT: ${DB_PORT}
+    depends_on:
+      - db
