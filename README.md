@@ -35,6 +35,11 @@ POST http://hanjaelee.com/users/signup
   "password": "1234"
   }
 ```
+* cli
+
+```
+curl -w '\n' -d '{"email":"jayhanjaeleetest@gmail.com", "password":"1234"}' -H 'Content-Type: application/json' -X POST http://hanjaelee.com/users/signup
+```
 
 - 로그인
 
@@ -45,6 +50,12 @@ GET http://hanjaelee.com/users/signin
   "email": "jayhanjaelee@gmail.com",
   "password": "1234"
   }
+```
+
+* cli
+
+```
+curl -w '\n' -d '{"email":"jayhanjaeleetest@gmail.com", "password":"1234"}' -H 'Content-Type: application/json' -X GET http://hanjaelee.com/users/signin
 ```
 
 ## 작업 내용

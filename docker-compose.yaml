@@ -3,6 +3,7 @@ version: "3"
 services:
   db:
     image: mysql:5.7
+    restart: always
     platform: linux/amd64
     ports:
       - "3306:3306"
@@ -17,6 +18,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
   web:
     build: .
+    restart: always
     ports:
       - "8000:8000"
     container_name: "payhere-web"
